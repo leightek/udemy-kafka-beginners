@@ -13,7 +13,7 @@ import java.util.Properties;
 public class ProducerDemoWithCallback {
     private static final Logger log = LoggerFactory.getLogger(ProducerDemoWithCallback.class.getSimpleName());
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         log.info("I am a kafka Producer!");
 
         // create Producer Properties
@@ -32,31 +32,38 @@ public class ProducerDemoWithCallback {
         properties.setProperty("key.serializer", StringSerializer.class.getName());
         properties.setProperty("value.serializer", StringSerializer.class.getName());
 
+        properties.setProperty("batch.size", "400");
+
         // create the Producer
         KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
 
-        for (int i = 0; i < 10; i++) {
-            // create a Producer Record
-            ProducerRecord<String, String> producerRecord = new ProducerRecord<>("demo_java",
-                    "hello world" + i);
+        for (int j = 0; j < 10; j++) {
 
-            // send data
-            producer.send(producerRecord, new Callback() {
-                @Override
-                public void onCompletion(RecordMetadata metadata, Exception e) {
-                    // executes every time a record successfully sent or exception is thrown
-                    if (e == null) {
-                        // the record was successfully sent
-                        log.info("Received new metadata \n" +
-                                "Topic: " + metadata.topic() + "\n" +
-                                "Partition: " + metadata.partition() + "\n" +
-                                "Offset: " + metadata.offset() + "\n" +
-                                "Timestamp: " + metadata.timestamp());
-                    } else {
-                        log.error("Error while producing", e);
+            for (int i = 0; i < 30; i++) {
+                // create a Producer Record
+                ProducerRecord<String, String> producerRecord = new ProducerRecord<>("demo_java",
+                        "hello world" + i);
+
+                // send data
+                producer.send(producerRecord, new Callback() {
+                    @Override
+                    public void onCompletion(RecordMetadata metadata, Exception e) {
+                        // executes every time a record successfully sent or exception is thrown
+                        if (e == null) {
+                            // the record was successfully sent
+                            log.info("Received new metadata \n" +
+                                    "Topic: " + metadata.topic() + "\n" +
+                                    "Partition: " + metadata.partition() + "\n" +
+                                    "Offset: " + metadata.offset() + "\n" +
+                                    "Timestamp: " + metadata.timestamp());
+                        } else {
+                            log.error("Error while producing", e);
+                        }
                     }
-                }
-            });
+                });
+            }
+
+            Thread.sleep(500);
         }
 
         // tell the producer to send all data and block util done ... synchronous
